@@ -11,6 +11,7 @@ import urllib
 import networkx as nx
 import Queue
 import datetime
+import codecs
 
 # Usage : python download1.py {CHANNEL_LIMIT}
 
@@ -133,8 +134,12 @@ def creating_graph(start_id,channel_limit):
 							print("Found Deleted or Private Video, not added")
 						else :
 							#print('add play_list video')
-							graph.add_node(v, type='video', channelId=item['snippet']['channelId'],playlist=playlist['id'], title=item['snippet']['title'], description=item['snippet']['description'], publishedAt=item['snippet']['publishedAt'])
+							graph.add_node(v, type='video', channelId=item['snippet']['channelId'],playlist=list(), title=item['snippet']['title'], description=item['snippet']['description'], publishedAt=item['snippet']['publishedAt'])
+							graph.node[v]['playlist'].append(playlist['id'])
 							graph.add_edge(channel_id, v, type='has')
+					else:
+						if playlist['id'] not in graph.node[v]['playlist']:
+							graph.node[v]['playlist'].append(playlist['id'])
 					# related video part
 					
 					'''for related_video in query_youtube_page_for_related_videos(v):
@@ -148,7 +153,7 @@ def creating_graph(start_id,channel_limit):
 								if video_info['items'][0]['snippet']['title'] == 'Deleted video' or video_info['items'][0]['snippet']['title'] == 'Private video':
 									print("Found Deleted or Private Video, not added")
 								else:
-									#print('add related_video')
+									#print('add related_video')	
 									graph.add_node(v, type='video', channelId=video_info['items'][0]['snippet']['channelId'], title=video_info['items'][0]['snippet']['title'], description=video_info['items'][0]['snippet']['description'], publishedAt=video_info['items'][0]['snippet']['publishedAt'])
 									channel_tmp = video_info['items'][0]['snippet']['channelId']
 									if not graph.has_node(channel_tmp):
@@ -195,13 +200,24 @@ def read_graph(filename):
 	graph=nx.read_gpickle(filename)
 	return graph
 
-def browse_graph(mygraph):
+def browse_graph(mygraph,filename=None,output=False):
+	if filename == None:
+		name= datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')+"_browse_graph_output.txt"
+	if output:
+		fd = codecs.open(name, "w" , "utf-8")
 	list=mygraph.nodes()
 	for node in list:		
 		if mygraph.node[node]['type'] == 'video':
-			print("A video : "+mygraph.node[node]['title']+" pid : "+mygraph.node[node]['playlist'])
+			print("A video : "+mygraph.node[node]['title']+" pid : "+str(mygraph.node[node]['playlist']))
+			string_tmp = "A video : "+mygraph.node[node]['title']+" pid : "+str(mygraph.node[node]['playlist'])+"\n"
+			if output:
+				fd.write(string_tmp)
 		#else:
 			#print("A channel : "+node)
+	try:
+		fd.close()
+	except:
+		pass
 
 def count_graph(mygraph):
 	list=mygraph.nodes()
@@ -216,12 +232,11 @@ def count_graph(mygraph):
 
 if __name__ == "__main__":
 	#可以用 nx.compose 合併 graph
-	'''start_channel_id = 'UCEaYhE3Z6Jfst87atMYzmRA' # 這部分要再看怎麼 implement 之類的 有點煩 www
+	start_channel_id = 'UC26zQlW7dTNcyp9zKHVmv4Q' # 這部分要再看怎麼 implement 之類的 有點煩 www
 	channel_limit = int(sys.argv[1])
 	mygraph = nx.DiGraph();
 	mygraph = creating_graph(start_channel_id,channel_limit)
-	store_graph(mygraph,'output')'''
-	mygraph = nx.DiGraph()
-	mygraph = read_graph("output.gpickle")
-	count_graph(mygraph)
+	store_graph(mygraph,'firsttry')
+	'''mygraph = nx.DiGraph()
+	mygraph = read_graph("output.gpickle")'''
 	
