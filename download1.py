@@ -232,11 +232,12 @@ def count_graph(mygraph):
 
 if __name__ == "__main__":
 	#可以用 nx.compose 合併 graph
-	start_channel_id = 'UC26zQlW7dTNcyp9zKHVmv4Q' # 這部分要再看怎麼 implement 之類的 有點煩 www
+	'''start_channel_id = 'UC26zQlW7dTNcyp9zKHVmv4Q' # 這部分要再看怎麼 implement 之類的 有點煩 www
 	channel_limit = int(sys.argv[1])
 	mygraph = nx.DiGraph();
 	mygraph = creating_graph(start_channel_id,channel_limit)
-	store_graph(mygraph,'firsttry')
-	'''mygraph = nx.DiGraph()
-	mygraph = read_graph("output.gpickle")'''
+	store_graph(mygraph,'firsttry')'''
+	mygraph = nx.DiGraph()
+	mygraph = read_graph("firsttry.gpickle")
+	count_graph(mygraph)
 	
