@@ -102,12 +102,13 @@ def get_subscribe_list(channel_id):
 	return subscribed_id
 	
 def creating_graph(start_id,channel_limit):
+	channel_count =  channel_limit # channel count 是要算我還有幾個 channel left
 	graph = nx.DiGraph()
 	download_queue = Queue.Queue()
 	download_queue.put(start_channel_id)
 
 	while not download_queue.empty():
-		print(str(channel_limit) + ' channels left...' )
+		print(str(channel_count) + 'limit channels left...' )
 
 		channel_id = download_queue.get()
 		graph.add_node(channel_id, type='channel')
@@ -115,7 +116,7 @@ def creating_graph(start_id,channel_limit):
 		playlists = query_youtube_playlists(channel_id)
 		for playlist in playlists['items']:
 			playlist_item = query_youtube_playlistitem(playlist['id'])
-			print(playlist['id']+" : "+str(playlist_item['pageInfo']['totalResults']))
+			print("Playlist : "+playlist['id']+" : "+str(playlist_item['pageInfo']['totalResults'])+" video(s)")
 			if playlist_item['pageInfo']['totalResults'] > 50:
 				continue
 
@@ -150,8 +151,9 @@ def creating_graph(start_id,channel_limit):
 					graph.add_node(id,type='channel')
 					graph.add_edge(channel_id,id,type="subscribed") # 這行有爭議性 畢竟我們不確定他的 feature channel 是不是就是我 subscribed 的 channel
 					download_queue.put(id)
-
-		channel_limit -= 1
+					channel_count = channel_count + 1
+			channel_limit -= 1
+		channel_count = channel_count - 1
 	return graph
 	
 #把圖片存起來名字會依照現在的時間命名 例如 "2014-12-23_17:42:17_Network.gpickle"
@@ -159,7 +161,7 @@ def creating_graph(start_id,channel_limit):
 def store_graph(graph,name=None):
 	filename=datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')+"_Network.gpickle"
 	if name != None:
-		filename=name
+		filename=name+".gpickle"
 	nx.write_gpickle(graph,filename)
 	print("Finish storing the graph"+" "+filename)
 	return filename
@@ -175,12 +177,12 @@ if __name__ == "__main__":
 	channel_limit = int(sys.argv[1])
 	mygraph = nx.DiGraph();
 	mygraph = creating_graph(start_channel_id,channel_limit)
-	store_graph(mygraph)'''
-	'''mygraph=nx.DiGraph()
-	mygraph=read_graph('2014-12-23_20:11:31_Network.gpickle')
+	store_graph(mygraph,'output')'''
+	mygraph=nx.DiGraph()
+	mygraph=read_graph('2014-12-28_09:35:55_Network.gpickle')
 	list=mygraph.nodes()
 	for node in list:
 		if mygraph.node[node]['type'] == 'video':
 			print("A video : "+mygraph.node[node]['title'])
 		else:
-			print("A channel : "+node)'''
+			print("A channel : "+node)
