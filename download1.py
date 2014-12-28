@@ -36,8 +36,11 @@ def query_youtube_playlists(channel_id):
 
 	return json.loads(data)
 
-def query_youtube_playlistitem(playlist_id):
-	url= "/youtube/v3/playlistItems?part=snippet&playlistId="+playlist_id+"&key=AIzaSyCuYeQya-JMYpWHhK8kCQKxzlrQXam-b0k&maxResults=50"
+def query_youtube_playlistitem(playlist_id,token=None):
+	if token == None:
+		url= "/youtube/v3/playlistItems?part=snippet&playlistId="+playlist_id+"&key=AIzaSyCuYeQya-JMYpWHhK8kCQKxzlrQXam-b0k&maxResults=50"
+	else:
+		url= "/youtube/v3/playlistItems?part=snippet&playlistId="+playlist_id+"&&pageToken="+token+"&key=AIzaSyCuYeQya-JMYpWHhK8kCQKxzlrQXam-b0k&maxResults=50"
 
 	connection = httplib.HTTPSConnection("www.googleapis.com")
 	connection.request("GET", url)
@@ -116,40 +119,47 @@ def creating_graph(start_id,channel_limit):
 		playlists = query_youtube_playlists(channel_id)
 		for playlist in playlists['items']:
 			playlist_item = query_youtube_playlistitem(playlist['id'])
-			print("Playlist : "+playlist['id']+" : "+str(playlist_item['pageInfo']['totalResults'])+" video(s)")
-			if playlist_item['pageInfo']['totalResults'] > 50:
+			totalitems = playlist_item['pageInfo']['totalResults']
+			print("Playlist : "+playlist['id']+" : "+str(totalitems)+" video(s)")
+			if playlist_item['pageInfo']['totalResults'] > 500:
 				continue
-
-			for item in playlist_item['items']:
-				v = item['snippet']['resourceId']['videoId']
-				if not graph.has_node(v):
-					if item['snippet']['title'] == 'Deleted video' or item['snippet']['title'] == 'Private video':
-						print("Found Deleted or Private Video, not added")
-					else :
-						#print('add play_list video')
-						graph.add_node(v, type='video', channelId=item['snippet']['channelId'],playlist=playlist['id'], title=item['snippet']['title'], description=item['snippet']['description'], publishedAt=item['snippet']['publishedAt'])
-						graph.add_edge(channel_id, v, type='has')
-				
-				# related video part
-				
-				'''for related_video in query_youtube_page_for_related_videos(v):
-					if not graph.has_node(related_video):
-						p=re.compile('.*?watch\?v=(.*?)($|&)')
-						s=p.search(related_video)
-						related_video=s.group(1)
-						video_info = query_youtube_video(related_video)
-						v1=video_info['items'][0]['id']
-						if not graph.has_node(v1):
-							if video_info['items'][0]['snippet']['title'] == 'Deleted video' or video_info['items'][0]['snippet']['title'] == 'Private video':
-								print("Found Deleted or Private Video, not added")
-							else:
-								#print('add related_video')
-								graph.add_node(v, type='video', channelId=video_info['items'][0]['snippet']['channelId'], title=video_info['items'][0]['snippet']['title'], description=video_info['items'][0]['snippet']['description'], publishedAt=video_info['items'][0]['snippet']['publishedAt'])
-								channel_tmp = video_info['items'][0]['snippet']['channelId']
-								if not graph.has_node(channel_tmp):
-									graph.add_node(channel_tmp, type = 'channel')
-								graph.add_edge(channel_id, v, type='has')'''
-
+			#iterate through the list
+			end = False
+			while not end:
+				for item in playlist_item['items']:
+					v = item['snippet']['resourceId']['videoId']
+					if not graph.has_node(v):
+						if item['snippet']['title'] == 'Deleted video' or item['snippet']['title'] == 'Private video':
+							print("Found Deleted or Private Video, not added")
+						else :
+							#print('add play_list video')
+							graph.add_node(v, type='video', channelId=item['snippet']['channelId'],playlist=playlist['id'], title=item['snippet']['title'], description=item['snippet']['description'], publishedAt=item['snippet']['publishedAt'])
+							graph.add_edge(channel_id, v, type='has')
+					# related video part
+					
+					'''for related_video in query_youtube_page_for_related_videos(v):
+						if not graph.has_node(related_video):
+							p=re.compile('.*?watch\?v=(.*?)($|&)')
+							s=p.search(related_video)
+							related_video=s.group(1)
+							video_info = query_youtube_video(related_video)
+							v1=video_info['items'][0]['id']
+							if not graph.has_node(v1):
+								if video_info['items'][0]['snippet']['title'] == 'Deleted video' or video_info['items'][0]['snippet']['title'] == 'Private video':
+									print("Found Deleted or Private Video, not added")
+								else:
+									#print('add related_video')
+									graph.add_node(v, type='video', channelId=video_info['items'][0]['snippet']['channelId'], title=video_info['items'][0]['snippet']['title'], description=video_info['items'][0]['snippet']['description'], publishedAt=video_info['items'][0]['snippet']['publishedAt'])
+									channel_tmp = video_info['items'][0]['snippet']['channelId']
+									if not graph.has_node(channel_tmp):
+										graph.add_node(channel_tmp, type = 'channel')
+									graph.add_edge(channel_id, v, type='has')'''
+				#確認list 已經跑完
+				try:
+					nextToken = playlist_item['nextPageToken']
+					playlist_item = query_youtube_playlistitem(playlist['id'],token = nextToken)
+				except:
+					end = True
 
 		#這個部分是原本學長寫拿 subscribed channel 的方法，因為會權限不足改成用我的方式去做暴力爬
 		'''subscriptions = query_youtube_subscriptions(channel_id)
@@ -205,12 +215,13 @@ def count_graph(mygraph):
 	print("The graph has "+str(video_count)+" video(s)\nThe graph has "+str(channel_count)+" channel(s)")
 
 if __name__ == "__main__":
+	#可以用 nx.compose 合併 graph
 	'''start_channel_id = 'UCEaYhE3Z6Jfst87atMYzmRA' # 這部分要再看怎麼 implement 之類的 有點煩 www
 	channel_limit = int(sys.argv[1])
 	mygraph = nx.DiGraph();
 	mygraph = creating_graph(start_channel_id,channel_limit)
 	store_graph(mygraph,'output')'''
-	'''mygraph=nx.DiGraph()
-	mygraph=read_graph('output.gpickle')
-	print(str(mygraph.number_of_nodes())+" nodes")
-	browse_graph(mygraph)'''
+	mygraph = nx.DiGraph()
+	mygraph = read_graph("output.gpickle")
+	count_graph(mygraph)
+	
