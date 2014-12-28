@@ -10,6 +10,7 @@ from lxml import etree
 import urllib
 import networkx as nx
 import Queue
+import datetime
 
 # Usage : python download1.py {CHANNEL_LIMIT}
 
@@ -100,26 +101,21 @@ def get_subscribe_list(channel_id):
 		subscribed_id.append(pq(span).attr('data-ytid'))
 	return subscribed_id
 	
-
-if __name__ == "__main__":
-	start_channel_id = 'UC26zQlW7dTNcyp9zKHVmv4Q'
-	channel_limit = int(sys.argv[1])
+def creating_graph(start_id,channel_limit):
 	graph = nx.DiGraph()
-
-	
 	download_queue = Queue.Queue()
 	download_queue.put(start_channel_id)
 
-	while channel_limit > 0 and not download_queue.empty():
+	while not download_queue.empty():
 		print(str(channel_limit) + ' channels left...' )
 
 		channel_id = download_queue.get()
-
 		graph.add_node(channel_id, type='channel')
 
 		playlists = query_youtube_playlists(channel_id)
 		for playlist in playlists['items']:
 			playlist_item = query_youtube_playlistitem(playlist['id'])
+			print(playlist['id']+" : "+str(playlist_item['pageInfo']['totalResults']))
 			if playlist_item['pageInfo']['totalResults'] > 50:
 				continue
 
@@ -147,11 +143,44 @@ if __name__ == "__main__":
 			for item in subscriptions['items']:
 				download_queue.put(item['snippet']['resourceId']['channelId'])'''
 		#以下是我所新增的部分 2014/12/23
-		subscriptions = get_subscribe_list(channel_id)
-		for id in subscriptions:
-			if not graph.has_node(id):
-				graph.add_node(id,type='channel')
-				graph.add_edge(channel_id,id,type="subscribed") # 這行有爭議性 畢竟我們不確定他的 feature channel 是不是就是我 subscribed 的 channel
-				download_queue.put(id)
+		if channel_limit > 0 :
+			subscriptions = get_subscribe_list(channel_id)
+			for id in subscriptions:
+				if not graph.has_node(id):
+					graph.add_node(id,type='channel')
+					graph.add_edge(channel_id,id,type="subscribed") # 這行有爭議性 畢竟我們不確定他的 feature channel 是不是就是我 subscribed 的 channel
+					download_queue.put(id)
 
 		channel_limit -= 1
+	return graph
+	
+#把圖片存起來名字會依照現在的時間命名 例如 "2014-12-23_17:42:17_Network.gpickle"
+#會回傳我現在存好的 filename 以後方便 read
+def store_graph(graph,name=None):
+	filename=datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')+"_Network.gpickle"
+	if name != None:
+		filename=name
+	nx.write_gpickle(graph,filename)
+	print("Finish storing the graph"+" "+filename)
+	return filename
+
+#讀取graph
+def read_graph(filename):
+	graph=nx.DiGraph()
+	graph=nx.read_gpickle(filename)
+	return graph
+
+if __name__ == "__main__":
+	'''start_channel_id = 'UCDF7bG5xErmnwa-rsRJlGqw' # 這部分要再看怎麼 implement 之類的 有點煩 www
+	channel_limit = int(sys.argv[1])
+	mygraph = nx.DiGraph();
+	mygraph = creating_graph(start_channel_id,channel_limit)
+	store_graph(mygraph)'''
+	'''mygraph=nx.DiGraph()
+	mygraph=read_graph('2014-12-23_20:11:31_Network.gpickle')
+	list=mygraph.nodes()
+	for node in list:
+		if mygraph.node[node]['type'] == 'video':
+			print("A video : "+mygraph.node[node]['title'])
+		else:
+			print("A channel : "+node)'''

@@ -97,7 +97,7 @@ def get_subscribe_list(channel_id):
 	subscribed_id=list()
 	for span in d('span.g-hovercard'):
 		subscribed_id.append(pq(span).attr('data-ytid'))
-	return subscribed_id	
+	return subscribed_id
 
 if __name__ == "__main__":
 	start_channel_id = 'UC26zQlW7dTNcyp9zKHVmv4Q'
