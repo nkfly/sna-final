@@ -126,12 +126,13 @@ def creating_graph(start_id,channel_limit):
 					if item['snippet']['title'] == 'Deleted video' or item['snippet']['title'] == 'Private video':
 						print("Found Deleted or Private Video, not added")
 					else :
+						#print('add play_list video')
 						graph.add_node(v, type='video', channelId=item['snippet']['channelId'],playlist=playlist['id'], title=item['snippet']['title'], description=item['snippet']['description'], publishedAt=item['snippet']['publishedAt'])
-				graph.add_edge(channel_id, v, type='has')
+						graph.add_edge(channel_id, v, type='has')
 				
 				# related video part
 				
-				for related_video in query_youtube_page_for_related_videos(v):
+				'''for related_video in query_youtube_page_for_related_videos(v):
 					if not graph.has_node(related_video):
 						p=re.compile('.*?watch\?v=(.*?)($|&)')
 						s=p.search(related_video)
@@ -141,7 +142,13 @@ def creating_graph(start_id,channel_limit):
 						if not graph.has_node(v1):
 							if video_info['items'][0]['snippet']['title'] == 'Deleted video' or video_info['items'][0]['snippet']['title'] == 'Private video':
 								print("Found Deleted or Private Video, not added")
-							graph.add_node(v, type='video', channelId=video_info['items'][0]['snippet']['channelId'], title=video_info['items'][0]['snippet']['title'], description=video_info['items'][0]['snippet']['description'], publishedAt=video_info['items'][0]['snippet']['publishedAt'])
+							else:
+								#print('add related_video')
+								graph.add_node(v, type='video', channelId=video_info['items'][0]['snippet']['channelId'], title=video_info['items'][0]['snippet']['title'], description=video_info['items'][0]['snippet']['description'], publishedAt=video_info['items'][0]['snippet']['publishedAt'])
+								channel_tmp = video_info['items'][0]['snippet']['channelId']
+								if not graph.has_node(channel_tmp):
+									graph.add_node(channel_tmp, type = 'channel')
+								graph.add_edge(channel_id, v, type='has')'''
 
 
 		#這個部分是原本學長寫拿 subscribed channel 的方法，因為會權限不足改成用我的方式去做暴力爬
@@ -178,17 +185,32 @@ def read_graph(filename):
 	graph=nx.read_gpickle(filename)
 	return graph
 
+def browse_graph(mygraph):
+	list=mygraph.nodes()
+	for node in list:		
+		if mygraph.node[node]['type'] == 'video':
+			print("A video : "+mygraph.node[node]['title']+" pid : "+mygraph.node[node]['playlist'])
+		#else:
+			#print("A channel : "+node)
+
+def count_graph(mygraph):
+	list=mygraph.nodes()
+	channel_count=0
+	video_count=0
+	for node in list:
+		if mygraph.node[node]['type'] == 'video':
+			video_count+=1
+		else:
+			channel_count+=1
+	print("The graph has "+str(video_count)+" video(s)\nThe graph has "+str(channel_count)+" channel(s)")
+
 if __name__ == "__main__":
-	'''start_channel_id = 'UCDF7bG5xErmnwa-rsRJlGqw' # 這部分要再看怎麼 implement 之類的 有點煩 www
+	'''start_channel_id = 'UCEaYhE3Z6Jfst87atMYzmRA' # 這部分要再看怎麼 implement 之類的 有點煩 www
 	channel_limit = int(sys.argv[1])
 	mygraph = nx.DiGraph();
 	mygraph = creating_graph(start_channel_id,channel_limit)
 	store_graph(mygraph,'output')'''
-	mygraph=nx.DiGraph()
+	'''mygraph=nx.DiGraph()
 	mygraph=read_graph('output.gpickle')
-	list=mygraph.nodes()
-	for node in list:
-		if mygraph.node[node]['type'] == 'video':
-			print("A video : "+mygraph.node[node]['title'])
-		else:
-			print("A channel : "+node)
+	print(str(mygraph.number_of_nodes())+" nodes")
+	browse_graph(mygraph)'''
