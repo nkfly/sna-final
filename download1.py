@@ -102,13 +102,13 @@ def get_subscribe_list(channel_id):
 	return subscribed_id
 	
 def creating_graph(start_id,channel_limit):
-	channel_count =  channel_limit # channel count 是要算我還有幾個 channel left
+	channel_count =  channel_limit-1 # channel count 是要算我還有幾個 channel left
 	graph = nx.DiGraph()
 	download_queue = Queue.Queue()
 	download_queue.put(start_channel_id)
 
 	while not download_queue.empty():
-		print(str(channel_count) + 'limit channels left...' )
+		print(str(channel_count) + ' channels left...' )
 
 		channel_id = download_queue.get()
 		graph.add_node(channel_id, type='channel')
@@ -123,7 +123,10 @@ def creating_graph(start_id,channel_limit):
 			for item in playlist_item['items']:
 				v = item['snippet']['resourceId']['videoId']
 				if not graph.has_node(v):
-					graph.add_node(v, type='video', channelId=item['snippet']['channelId'],playlist=playlist['id'], title=item['snippet']['title'], description=item['snippet']['description'], publishedAt=item['snippet']['publishedAt'])
+					if item['snippet']['title'] == 'Deleted video' or item['snippet']['title'] == 'Private video':
+						print("Found Deleted or Private Video, not added")
+					else :
+						graph.add_node(v, type='video', channelId=item['snippet']['channelId'],playlist=playlist['id'], title=item['snippet']['title'], description=item['snippet']['description'], publishedAt=item['snippet']['publishedAt'])
 				graph.add_edge(channel_id, v, type='has')
 				
 				# related video part
@@ -135,7 +138,10 @@ def creating_graph(start_id,channel_limit):
 						related_video=s.group(1)
 						video_info = query_youtube_video(related_video)
 						v1=video_info['items'][0]['id']
-				 		graph.add_node(v, type='video', channelId=video_info['items'][0]['snippet']['channelId'], title=video_info['items'][0]['snippet']['title'], description=video_info['items'][0]['snippet']['description'], publishedAt=video_info['items'][0]['snippet']['publishedAt'])
+						if not graph.has_node(v1):
+							if video_info['items'][0]['snippet']['title'] == 'Deleted video' or video_info['items'][0]['snippet']['title'] == 'Private video':
+								print("Found Deleted or Private Video, not added")
+							graph.add_node(v, type='video', channelId=video_info['items'][0]['snippet']['channelId'], title=video_info['items'][0]['snippet']['title'], description=video_info['items'][0]['snippet']['description'], publishedAt=video_info['items'][0]['snippet']['publishedAt'])
 
 
 		#這個部分是原本學長寫拿 subscribed channel 的方法，因為會權限不足改成用我的方式去做暴力爬
@@ -179,7 +185,7 @@ if __name__ == "__main__":
 	mygraph = creating_graph(start_channel_id,channel_limit)
 	store_graph(mygraph,'output')'''
 	mygraph=nx.DiGraph()
-	mygraph=read_graph('2014-12-28_09:35:55_Network.gpickle')
+	mygraph=read_graph('output.gpickle')
 	list=mygraph.nodes()
 	for node in list:
 		if mygraph.node[node]['type'] == 'video':
