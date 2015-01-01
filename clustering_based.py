@@ -84,6 +84,16 @@ def construct_affinity_matrix(mygraph, predict_candidates):
 	return matrix
 
 
+def count_accuracy(mygraph, predict_candidates, labels):
+	len_predict_candidates = len(predict_candidates)
+	correct = 0
+	for i in range(len_predict_candidates):
+		for j in range(i+1, len_predict_candidates):
+			if (mygraph.node[predict_candidates[i]]['playlist'] == mygraph.node[predict_candidates[j]]['playlist']) == (labels[i] == labels[j]):
+				correct += 1
+	return correct/(len_predict_candidates*(len_predict_candidates-1)/2)
+
+
 
 if __name__ == '__main__':
 	mygraph = read_graph("/home/nkfly/firsttry.gpickle")
@@ -100,10 +110,10 @@ if __name__ == '__main__':
 			continue
 		affinity_matrix = construct_affinity_matrix(mygraph,  predict_candidates)
 		# print(affinity_matrix)
-		n_clusters = 3
 
 		# preference = np.median(affinity_matrix) * 10				
 		# Compute Affinity Propagation
 		cluster_centers_indices, labels = affinity_propagation(affinity_matrix)
-		print(labels)
+		
+		print(count_accuracy(mygraph, predict_candidates, labels))
 
