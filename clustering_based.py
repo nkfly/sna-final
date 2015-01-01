@@ -19,40 +19,91 @@ from sklearn.cluster.affinity_propagation_ import AffinityPropagation, \
 from sklearn.datasets.samples_generator import make_blobs
 from sklearn.metrics import euclidean_distances
 
+def lcs_len(x, y):
+    """This function returns length of longest common sequence of x and y."""
+ 
+    if len(x) == 0 or len(y) == 0:
+        return 0
+ 
+    xx = x[:-1]   # xx = sequence x without its last element    
+    yy = y[:-1]
+ 
+    if x[-1] == y[-1]:  # if last elements of x and y are equal
+        return lcs_len(xx, yy) + 1
+    else:
+        return max(lcs_len(xx, y), lcs_len(x, yy))
+
+def lcs(a, b):
+    lengths = [[0 for j in range(len(b)+1)] for i in range(len(a)+1)]
+    # row 0 and column 0 are initialized to 0 already
+    for i, x in enumerate(a):
+        for j, y in enumerate(b):
+            if x == y:
+                lengths[i+1][j+1] = lengths[i][j] + 1
+            else:
+                lengths[i+1][j+1] = \
+                    max(lengths[i+1][j], lengths[i][j+1])
+    # read the substring out from the matrix
+    result = ""
+    x, y = len(a), len(b)
+    while x != 0 and y != 0:
+        if lengths[x][y] == lengths[x-1][y]:
+            x -= 1
+        elif lengths[x][y] == lengths[x][y-1]:
+            y -= 1
+        else:
+            assert a[x-1] == b[y-1]
+            result = a[x-1] + result
+            x -= 1
+            y -= 1
+    return len(result)
+
+
+def affinity(mygraph, node1, node2):
+	# return lcs(mygraph.node[node1]['title'], mygraph.node[node2]['title'])
+	set1 = set(mygraph.node[node1]['title'].split())
+	set2 = set(mygraph.node[node2]['title'].split())
+	# if node1 != node2:
+		# print(set.intersection(set2))
+	return len(set1.intersection(set2))
+
+def read_graph(filename):
+	graph=nx.DiGraph()
+	graph=nx.read_gpickle(filename)
+	return graph
+
+def construct_affinity_matrix(mygraph, predict_candidates):
+	matrix = list()
+	i = 0;
+	for node1 in predict_candidates:
+		matrix.append([])
+		for node2 in predict_candidates:
+			matrix[i].append(affinity(mygraph, node1, node2))
+		i += 1
+
+	return matrix
+
+
+
 if __name__ == '__main__':
-	n_clusters = 3
-	centers = np.array([[1, 1], [-1, -1], [1, -1]]) + 10
-	X, _ = make_blobs(n_samples=60, n_features=2, centers=centers,cluster_std=0.4, shuffle=True, random_state=0)
-	
-	# Compute similarities
-	S = -euclidean_distances(X, squared=True)
-	print(len(S))
-	preference = np.median(S) * 10
-	print(preference)
-	# Compute Affinity Propagation
-	cluster_centers_indices, labels = affinity_propagation(S,
-			preference=preference)
-	print(labels)
-	n_clusters_ = len(cluster_centers_indices)
+	mygraph = read_graph("/home/nkfly/firsttry.gpickle")
+	for node in mygraph.nodes():
+		if mygraph.node[node]['type'] == 'video':
+			continue
 
-	assert_equal(n_clusters, n_clusters_)
+		predict_candidates = list()
+		for neighbor in mygraph.neighbors(node):
+			if mygraph.node[neighbor]['type'] == 'video':
+				predict_candidates.append(neighbor)
 
-	af = AffinityPropagation(preference=preference, affinity="precomputed")
-	labels_precomputed = af.fit(S).labels_
+		if len(predict_candidates) == 0:
+			continue
+		affinity_matrix = construct_affinity_matrix(mygraph,  predict_candidates)
+		# print(affinity_matrix)
+		n_clusters = 3
 
-	af = AffinityPropagation(preference=preference)
-	labels = af.fit(X).labels_
-
-	assert_array_equal(labels, labels_precomputed)
-
-	cluster_centers_indices = af.cluster_centers_indices_
-
-	n_clusters_ = len(cluster_centers_indices)
-	assert_equal(np.unique(labels).size, n_clusters_)
-	assert_equal(n_clusters, n_clusters_)
-
-	# Test also with no copy
-	_, labels_no_copy = affinity_propagation(S, preference=preference,
-			copy=False)
-	assert_array_equal(labels, labels_no_copy)
+		# preference = np.median(affinity_matrix) * 10				
+		# Compute Affinity Propagation
+		cluster_centers_indices, labels = affinity_propagation(affinity_matrix)
+		print(labels)
 
