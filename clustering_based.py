@@ -162,6 +162,9 @@ def to_compact_vectors(tfidf_vectors, dimension_max):
 
 if __name__ == '__main__':
 	mygraph = read_graph("/home/nkfly/firsttry.gpickle")
+	accuracy_from_kmeans = 0
+	accuracy_from_affinity_propogation = 0
+	sample_number = 0
 	for node in mygraph.nodes():
 		if mygraph.node[node]['type'] == 'video':
 			continue
@@ -174,6 +177,7 @@ if __name__ == '__main__':
 		if len(predict_candidates) == 0:
 			continue
 
+		sample_number += 1
 		peek_data_for_playlist_number = set()
 		for node in predict_candidates:			
 			peek_data_for_playlist_number.update(mygraph.node[node]['playlist'])
@@ -190,9 +194,21 @@ if __name__ == '__main__':
 		
 		estimator.fit(tfidf_vectors)
 		labels = estimator.labels_
+		accuracy_from_kmeans += count_accuracy(mygraph, predict_candidates, labels)
 
-		# affinity_matrix = construct_affinity_matrix(mygraph,  predict_candidates)
-		# cluster_centers_indices, labels = affinity_propagation(affinity_matrix)
-		
-		print(count_accuracy(mygraph, predict_candidates, labels))
+
+
+
+
+
+
+		affinity_matrix = construct_affinity_matrix(mygraph,  predict_candidates)
+		cluster_centers_indices, labels = affinity_propagation(affinity_matrix)
+
+		accuracy_from_affinity_propogation += count_accuracy(mygraph, predict_candidates, labels)
+
+		print('accuracy_from_kmeans:'+str(accuracy_from_kmeans/sample_number) + ' accuracy_from_affinity_propogation:'+str(accuracy_from_affinity_propogation/sample_number))
+
+
+		# print(count_accuracy(mygraph, predict_candidates, labels))
 
