@@ -230,14 +230,38 @@ def count_graph(mygraph):
 			channel_count+=1
 	print("The graph has "+str(video_count)+" video(s)\nThe graph has "+str(channel_count)+" channel(s)")
 
+def add_related_video(mygraph):
+	list = mygraph.nodes()
+	for node in list:
+		if mygraph.node[node]['type'] == 'video':
+			# 需要增加新的	related video part
+			try:
+				returna = query_youtube_page_for_related_videos(node)
+				for video_link in returna:
+					p=re.compile('.*?watch\?v=(.*?)($|&)')
+					s=p.search(video_link)
+					related_video=s.group(1)
+					video_info = query_youtube_video(related_video)
+					if video_info['items'][0]['snippet']['channelId'] == mygraph.node[node]['channelId']:
+						if related_video in video_link:
+							mygraph.add_edge(node,video_info['items'][0]['id'])
+							mygraph.add_edge(video_info['items'][0]['id'],node)
+							#print("add edge")
+						else:
+							print("Unexcepecrted stuff, the video has same author but not in the graph 0.0 ?")
+			except:
+				pass
+		else:
+			print("\nchange channel\n")
+
 if __name__ == "__main__":
 	#可以用 nx.compose 合併 graph
-	'''start_channel_id = 'UC26zQlW7dTNcyp9zKHVmv4Q' # 這部分要再看怎麼 implement 之類的 有點煩 www
+	start_channel_id = 'UCKBIWLnzHg9QZzhxUb5eLJw' # 這部分要再看怎麼 implement 之類的 有點煩 www
 	channel_limit = int(sys.argv[1])
 	mygraph = nx.DiGraph();
 	mygraph = creating_graph(start_channel_id,channel_limit)
-	store_graph(mygraph,'firsttry')'''
-	mygraph = nx.DiGraph()
+	store_graph(mygraph,'secondtry')
+	'''mygraph = nx.DiGraph()
 	mygraph = read_graph("firsttry.gpickle")
-	count_graph(mygraph)
-	
+	add_related_video(mygraph)
+	store_graph("testing")'''
