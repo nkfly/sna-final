@@ -1,16 +1,16 @@
-print(__doc__)
-
-from time import time
 import numpy as np
 
+from sklearn.cluster import DBSCAN
 from sklearn import metrics
-from sklearn.cluster import KMeans
-from sklearn.datasets import load_digits
-from sklearn.decomposition import PCA
-from sklearn.preprocessing import scale
+from sklearn.datasets.samples_generator import make_blobs
+from sklearn.preprocessing import StandardScaler
 
-np.random.seed(42)
 
-digits = load_digits()
-data = scale(digits.data)
-print(data)
+##############################################################################
+# Generate sample data
+centers = [[1, 1], [-1, -1], [1, -1]]
+X, labels_true = make_blobs(n_samples=750, centers=centers, cluster_std=0.4,
+                            random_state=0)
+
+X = StandardScaler().fit_transform(X)
+print(X)

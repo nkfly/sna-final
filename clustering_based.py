@@ -21,6 +21,8 @@ from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 from sklearn.datasets.samples_generator import make_blobs
 from sklearn.metrics import euclidean_distances
+from sklearn.cluster import MeanShift, estimate_bandwidth
+from sklearn.cluster import DBSCAN
 
 def lcs_len(x, y):
     """This function returns length of longest common sequence of x and y."""
@@ -89,6 +91,8 @@ def construct_affinity_matrix(mygraph, predict_candidates):
 
 def count_accuracy(mygraph, predict_candidates, labels):
 	len_predict_candidates = len(predict_candidates)
+	if len_predict_candidates <= 1:
+		return 1
 	correct = 0
 	for i in range(len_predict_candidates):
 		for j in range(i+1, len_predict_candidates):
@@ -161,9 +165,10 @@ def to_compact_vectors(tfidf_vectors, dimension_max):
 
 
 if __name__ == '__main__':
-	mygraph = read_graph("/home/nkfly/firsttry.gpickle")
+	mygraph = read_graph("./firsttry.gpickle")
 	accuracy_from_kmeans = 0
 	accuracy_from_affinity_propogation = 0
+	accuracy_from_dbscsn = 0
 	sample_number = 0
 	for node in mygraph.nodes():
 		if mygraph.node[node]['type'] == 'video':
@@ -205,9 +210,20 @@ if __name__ == '__main__':
 		affinity_matrix = construct_affinity_matrix(mygraph,  predict_candidates)
 		cluster_centers_indices, labels = affinity_propagation(affinity_matrix)
 
+
 		accuracy_from_affinity_propogation += count_accuracy(mygraph, predict_candidates, labels)
 
-		print('accuracy_from_kmeans:'+str(accuracy_from_kmeans/sample_number) + ' accuracy_from_affinity_propogation:'+str(accuracy_from_affinity_propogation/sample_number))
+
+		
+		db = DBSCAN(eps=0.8, min_samples=1)
+		X = np.array(tfidf_vectors)
+		db.fit(X)
+		labels = db.labels_
+		accuracy_from_dbscsn += count_accuracy(mygraph, predict_candidates, labels)
+
+
+
+		print('accuracy_from_kmeans:'+str(accuracy_from_kmeans/sample_number) + ' accuracy_from_affinity_propogation:'+str(accuracy_from_affinity_propogation/sample_number)+ ' accuracy_from_dbscsn:'+str(accuracy_from_dbscsn/sample_number))
 
 
 		# print(count_accuracy(mygraph, predict_candidates, labels))
