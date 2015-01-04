@@ -163,6 +163,49 @@ def to_compact_vectors(tfidf_vectors, dimension_max):
 		compact_vectors.append(v)
 	return compact_vectors
 
+def get_playlist_number(mygraph, node):
+	predict_candidates = list()
+	for neighbor in mygraph.neighbors(node):
+		if mygraph.node[neighbor]['type'] == 'video':
+			predict_candidates.append(neighbor)
+	peek_data_for_playlist_number = set()
+	for node in predict_candidates:			
+		peek_data_for_playlist_number.update(mygraph.node[node]['playlist'])
+	return len(peek_data_for_playlist_number)
+		
+
+
+def get_average_playlist_number(mygraph):
+	sample_number = 0
+	sum_of_playlist = 0
+	for node in mygraph.nodes():
+		if mygraph.node[node]['type'] == 'video':
+			continue
+
+		
+		playlist_number = get_playlist_number(mygraph, node)
+		if playlist_number == 0:
+			continue
+
+		sum_of_playlist += playlist_number
+		sample_number += 1
+		
+	return int(sum_of_playlist/sample_number)
+
+def get_neighbor_average_playlist_number(mygraph, node):
+	sample_number = 0
+	sum_of_playlist = 0
+	for neighbor in mygraph.neighbors(node):
+		if mygraph.node[neighbor]['type'] == 'channel':
+			playlist_number = get_playlist_number(mygraph, neighbor)
+			if playlist_number == 0:
+				continue
+			sum_of_playlist += playlist_number
+			sample_number += 1
+	if sample_number == 0:
+		return 11
+	return int(sum_of_playlist/sample_number)
+			
 
 if __name__ == '__main__':
 	mygraph = read_graph("./firsttry.gpickle")
@@ -170,6 +213,7 @@ if __name__ == '__main__':
 	accuracy_from_affinity_propogation = 0
 	accuracy_from_dbscsn = 0
 	sample_number = 0
+	# print(get_average_playlist_number(mygraph))
 	for node in mygraph.nodes():
 		if mygraph.node[node]['type'] == 'video':
 			continue
@@ -187,7 +231,8 @@ if __name__ == '__main__':
 		for node in predict_candidates:			
 			peek_data_for_playlist_number.update(mygraph.node[node]['playlist'])
 		# print(len(peek_data_for_playlist_number))
-		n_clusters = len(peek_data_for_playlist_number)
+		# n_clusters = len(peek_data_for_playlist_number)
+		n_clusters = get_neighbor_average_playlist_number(mygraph, node)
 		tfidf_vectors, dimension_max = convert_to_tfidf_bigram(mygraph, predict_candidates)
 
 		tfidf_vectors = to_compact_vectors(tfidf_vectors, dimension_max)
@@ -215,15 +260,16 @@ if __name__ == '__main__':
 
 
 		
-		db = DBSCAN(eps=0.8, min_samples=1)
-		X = np.array(tfidf_vectors)
-		db.fit(X)
-		labels = db.labels_
-		accuracy_from_dbscsn += count_accuracy(mygraph, predict_candidates, labels)
+		# db = DBSCAN(eps=0.8, min_samples=1)
+		# X = np.array(tfidf_vectors)
+		# db.fit(X)
+		# labels = db.labels_
+		# accuracy_from_dbscsn += count_accuracy(mygraph, predict_candidates, labels)
 
 
 
-		print('accuracy_from_kmeans:'+str(accuracy_from_kmeans/sample_number) + ' accuracy_from_affinity_propogation:'+str(accuracy_from_affinity_propogation/sample_number)+ ' accuracy_from_dbscsn:'+str(accuracy_from_dbscsn/sample_number))
+		# print('accuracy_from_kmeans:'+str(accuracy_from_kmeans/sample_number) + ' accuracy_from_affinity_propogation:'+str(accuracy_from_affinity_propogation/sample_number)+ ' accuracy_from_dbscsn:'+str(accuracy_from_dbscsn/sample_number))
+		print('accuracy_from_kmeans:'+str(accuracy_from_kmeans/sample_number) + ' accuracy_from_affinity_propogation:'+str(accuracy_from_affinity_propogation/sample_number))
 
 
 		# print(count_accuracy(mygraph, predict_candidates, labels))
