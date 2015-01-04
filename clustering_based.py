@@ -23,6 +23,7 @@ from sklearn.datasets.samples_generator import make_blobs
 from sklearn.metrics import euclidean_distances
 from sklearn.cluster import MeanShift, estimate_bandwidth
 from sklearn.cluster import DBSCAN
+import community
 
 def lcs_len(x, y):
     """This function returns length of longest common sequence of x and y."""
@@ -66,11 +67,21 @@ def lcs(a, b):
 
 def affinity(mygraph, node1, node2):
 	# return lcs(mygraph.node[node1]['title'], mygraph.node[node2]['title'])
-	set1 = set(mygraph.node[node1]['title'].split())
-	set2 = set(mygraph.node[node2]['title'].split())
-	# if node1 != node2:
-		# print(set.intersection(set2))
-	return len(set1.intersection(set2))
+	node1_isenglish = isEnglish(mygraph.node[node1]['title'])
+	node2_isenglish = isEnglish(mygraph.node[node2]['title'])
+
+	if (node1_isenglish and node2_isenglish):
+		set1 = set(mygraph.node[node1]['title'].split())
+		set2 = set(mygraph.node[node2]['title'].split())
+		return len(set1.intersection(set2))
+	elif not node1_isenglish and node2_isenglish:
+		return 0
+	elif node1_isenglish and not node2_isenglish:
+		return 0
+	else :
+		set1 = set(list(mygraph.node[node1]['title']))
+		set2 = set(list(mygraph.node[node2]['title']))
+		return len(set1.intersection(set2))
 
 def read_graph(filename):
 	graph=nx.DiGraph()
@@ -205,6 +216,31 @@ def get_neighbor_average_playlist_number(mygraph, node):
 	if sample_number == 0:
 		return 11
 	return int(sum_of_playlist/sample_number)
+
+def construct_graph_from_affinity_matrix_and_community_label(affinity_matrix):
+	size =  len(affinity_matrix)
+	sum_affinity = 0
+	for i in range(size):
+		for j in range(i+1, size):
+			sum_affinity += affinity_matrix[i][j]
+	if size > 1:
+		average_affinity = sum_affinity/(size*(size-1))
+	else:
+		average_affinity = sum_affinity
+
+	graph = nx.Graph()
+	for i in range(size):
+		graph.add_node(i)
+		for j in range(i+1, size):
+			if affinity_matrix[i][j] >= average_affinity:
+				graph.add_edge(i, j)
+	
+	partition = community.best_partition(graph)	
+	labels = []
+	for i in range(size):
+		labels.append(partition[i])
+	return labels
+
 			
 
 if __name__ == '__main__':
@@ -212,6 +248,7 @@ if __name__ == '__main__':
 	accuracy_from_kmeans = 0
 	accuracy_from_affinity_propogation = 0
 	accuracy_from_dbscsn = 0
+	accuracy_from_community_detection = 0
 	sample_number = 0
 	# print(get_average_playlist_number(mygraph))
 	for node in mygraph.nodes():
@@ -259,6 +296,11 @@ if __name__ == '__main__':
 		accuracy_from_affinity_propogation += count_accuracy(mygraph, predict_candidates, labels)
 
 
+		labels = construct_graph_from_affinity_matrix_and_community_label(affinity_matrix)
+
+		accuracy_from_community_detection += count_accuracy(mygraph, predict_candidates, labels)
+
+
 		
 		# db = DBSCAN(eps=0.8, min_samples=1)
 		# X = np.array(tfidf_vectors)
@@ -267,9 +309,9 @@ if __name__ == '__main__':
 		# accuracy_from_dbscsn += count_accuracy(mygraph, predict_candidates, labels)
 
 
-
+		print(' accuracy_from_affinity_propogation:'+str(accuracy_from_affinity_propogation/sample_number)+' accuracy_from_community_detection:'+str(accuracy_from_community_detection/sample_number))
 		# print('accuracy_from_kmeans:'+str(accuracy_from_kmeans/sample_number) + ' accuracy_from_affinity_propogation:'+str(accuracy_from_affinity_propogation/sample_number)+ ' accuracy_from_dbscsn:'+str(accuracy_from_dbscsn/sample_number))
-		print('accuracy_from_kmeans:'+str(accuracy_from_kmeans/sample_number) + ' accuracy_from_affinity_propogation:'+str(accuracy_from_affinity_propogation/sample_number))
+		# print('accuracy_from_kmeans:'+str(accuracy_from_kmeans/sample_number) + ' accuracy_from_affinity_propogation:'+str(accuracy_from_affinity_propogation/sample_number))
 
 
 		# print(count_accuracy(mygraph, predict_candidates, labels))
