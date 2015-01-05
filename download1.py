@@ -265,9 +265,9 @@ if __name__ == "__main__":
 	mygraph = creating_graph(start_channel_id,channel_limit)
 	store_graph(mygraph,'secondtry')'''
 	mygraph = nx.DiGraph()
-	mygraph = read_graph("secondtry.gpickle")
+	mygraph = read_graph("firsttry.gpickle")
 	mygraph1 = nx.DiGraph()
-	mygraph1 = read_graph("secondRelated.gpickle")
+	mygraph1 = read_graph("firstRelated.gpickle")
 	count_graph(mygraph)
 	count_graph(mygraph1)
 	print("Nodes: "+str(mygraph.number_of_nodes())+"   Edges: "+str(mygraph.number_of_edges()))
