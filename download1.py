@@ -224,10 +224,13 @@ def count_graph(mygraph):
 	channel_count=0
 	video_count=0
 	for node in list:
-		if mygraph.node[node]['type'] == 'video':
-			video_count+=1
-		else:
-			channel_count+=1
+		try:
+			if mygraph.node[node]['type'] == 'video':
+				video_count+=1
+			else:
+				channel_count+=1
+		except:
+			pass
 	print("The graph has "+str(video_count)+" video(s)\nThe graph has "+str(channel_count)+" channel(s)")
 
 def add_related_video(mygraph):
@@ -243,12 +246,12 @@ def add_related_video(mygraph):
 					related_video=s.group(1)
 					video_info = query_youtube_video(related_video)
 					if video_info['items'][0]['snippet']['channelId'] == mygraph.node[node]['channelId']:
-						if related_video in video_link:
+						if related_video in list:
 							mygraph.add_edge(node,video_info['items'][0]['id'])
-							mygraph.add_edge(video_info['items'][0]['id'],node)
 							#print("add edge")
 						else:
-							print("Unexcepecrted stuff, the video has same author but not in the graph 0.0 ?")
+							mygraph.add_node(related_video, type = 'video', channelId = video_info['items'][0]['snippet']['id'], playlist = list(), title = video_info['items'][0]['snippet']['title'], description = video_info['items'][0]['snippet']['description'], publishedAt = video_info['items'][0]['snippet']['publishedAt'])
+							#print("Unexcepecrted stuff, the video has same author but not in the graph 0.0 ?")
 			except:
 				pass
 		else:
@@ -256,12 +259,18 @@ def add_related_video(mygraph):
 
 if __name__ == "__main__":
 	#可以用 nx.compose 合併 graph
-	start_channel_id = 'UCKBIWLnzHg9QZzhxUb5eLJw' # 這部分要再看怎麼 implement 之類的 有點煩 www
+	'''start_channel_id = 'UCKBIWLnzHg9QZzhxUb5eLJw' # 這部分要再看怎麼 implement 之類的 有點煩 www
 	channel_limit = int(sys.argv[1])
 	mygraph = nx.DiGraph();
 	mygraph = creating_graph(start_channel_id,channel_limit)
-	store_graph(mygraph,'secondtry')
-	'''mygraph = nx.DiGraph()
-	mygraph = read_graph("firsttry.gpickle")
-	add_related_video(mygraph)
-	store_graph("testing")'''
+	store_graph(mygraph,'secondtry')'''
+	mygraph = nx.DiGraph()
+	mygraph = read_graph("secondtry.gpickle")
+	mygraph1 = nx.DiGraph()
+	mygraph1 = read_graph("secondRelated.gpickle")
+	count_graph(mygraph)
+	count_graph(mygraph1)
+	print("Nodes: "+str(mygraph.number_of_nodes())+"   Edges: "+str(mygraph.number_of_edges()))
+	print("Nodes: "+str(mygraph1.number_of_nodes())+"   Edges: "+str(mygraph1.number_of_edges()))
+	'''add_related_video(mygraph)
+	store_graph(mygraph,"firstRelated")'''
