@@ -256,21 +256,35 @@ def add_related_video(mygraph):
 				pass
 		else:
 			print("\nchange channel\n")
-
+#取得觀看次數，由於沒有辦法使用
+def get_view_number(v):
+	url= "/watch?v="+v
+	connection = httplib.HTTPSConnection("www.youtube.com")
+	connection.request("GET", url)
+	response = connection.getresponse()
+	data = response.read().decode("utf-8")
+	print(data.encode("utf8"))
+	#return int(a.replace(',',''))
+			
 if __name__ == "__main__":
 	#可以用 nx.compose 合併 graph
-	'''start_channel_id = 'UCKBIWLnzHg9QZzhxUb5eLJw' # 這部分要再看怎麼 implement 之類的 有點煩 www
+	'''start_channel_id = 'UCKBIWLnzHg9QZzhxUb5eLJw' # 這部分要再看怎麼print implement 之類的 有點煩 www
 	channel_limit = int(sys.argv[1])
 	mygraph = nx.DiGraph();
 	mygraph = creating_graph(start_channel_id,channel_limit)
 	store_graph(mygraph,'secondtry')'''
-	mygraph = nx.DiGraph()
-	mygraph = read_graph("firsttry.gpickle")
-	mygraph1 = nx.DiGraph()
+	#mygraph = nx.DiGraph()
+	#mygraph = read_graph("firsttry.gpickle")
+	'''mygraph1 = nx.DiGraph()
 	mygraph1 = read_graph("firstRelated.gpickle")
-	count_graph(mygraph)
-	count_graph(mygraph1)
-	print("Nodes: "+str(mygraph.number_of_nodes())+"   Edges: "+str(mygraph.number_of_edges()))
-	print("Nodes: "+str(mygraph1.number_of_nodes())+"   Edges: "+str(mygraph1.number_of_edges()))
-	'''add_related_video(mygraph)
-	store_graph(mygraph,"firstRelated")'''
+	for node in mygraph1.nodes():
+		if mygraph.node[node]['type'] == 'video':
+			print("video :"+str(node))
+			print(str(get_view_number(node)))
+			break'''
+	print(str(get_view_number('mxorHPrUyvs')))
+	#count_graph(mygraph)
+	#count_graph(mygraph1)
+	#print("Nodes: "+str(mygraph.number_of_nodes())+"   Edges: "+str(mygraph.number_of_edges()))
+	#print("Nodes: "+str(mygraph1.number_of_nodes())+"   Edges: "+str(mygraph1.number_of_edges()))
+	
